@@ -824,7 +824,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
                 
             },
             done: function (e, data) {
-
+				console.log("err?")
+				console.log(data);
                 if(data.result.errors == null){ 
                     styleGraphLoaded();
                     createGraph3D(data.result, getRenderData());
@@ -840,6 +841,14 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
                 }
 
             },
+            error: function (e, data) {
+				$('#loading-container').hide();
+                $('#error-container').show();
+                $('#error-container').text(  "Graph cannot be rendered. Please try again in a moment." );
+	         	setTimeout(function(){ 
+                	$('#error-container').hide();
+                }, 7000);
+			},
             progressall: function (e, data) {
                 var progress = parseInt(data.loaded / data.total * 100, 10);
                 $('#progress .bar').css(
