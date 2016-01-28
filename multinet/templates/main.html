@@ -464,6 +464,16 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
                     <div id="distanceSlider" style=""></div>
                 </td>
             </tr>
+            
+            <!--tr>
+            	<td colspan="2">
+            		<button id="calcTempNet" type="submit" class="btn btn-danger delete graph-replay-buttons" style="width:100%;" >
+                         <span class="glyphicon glyphicon-play" style="float:left;margin-top:3px;"></span>
+                        <span>C</span>
+                  	</button>
+            	</td>
+            </tr-->
+            
         </table>
     </div>
 
@@ -829,13 +839,17 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
                 
             },
             done: function (e, data) {
-				console.log("err?")
-				console.log(data);
+				//console.log("err?")
+				//console.log(data);
                 if(data.result.errors == null){ 
                     styleGraphLoaded();
-                    var res = createGraph3D(data.result, getRenderData());
-                    _destroyFunction = res.destroyFunction;
-                    globalData = data.result;
+                    //var res = createGraph3D(data.result, getRenderData());
+                    //_destroyFunction = res.destroyFunction;
+                    //globalData = data.result;
+                    
+                    displayGraph(data.result, getRenderData());
+                	globalData = data.result;     
+                    
                 }else{
                     $('#loading-container').hide();
                     $('#error-container').show();
@@ -905,6 +919,51 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
     function displayLayout(name){
         $("#instructions .layout-selection button.dropdown-toggle").text(name);
     }
+
+	$('#calcTempNet').click(function(e){
+		
+		var dataset = globalData.dataset;
+		var hash = globalData.hash;
+
+		var url = "{{ url_for('getTemporalNetwork', dataset='', hash=None ) }}";
+		url = url.replace('//','/');
+		url += dataset + '/' + hash + '/';
+		console.log(url);
+        $.ajax({
+        	url: url,
+            beforeSend:function(){
+                $('#loading-container').show();
+            },
+            success:function(data){
+            	//console.log(data);
+                if(data.errors == null){ 
+                    $('#loading-container').hide();        
+                    $('#container').width(window.innerWidth);
+                    $('#container').height(window.innerHeight);
+
+                }else{
+                    $('#loading-container').hide();
+                    $('#error-container').show();
+                    $('#error-container').text( data.errors);
+					setTimeout(function(){ 
+                    	$('#error-container').hide();
+                    }, 7000);
+                    
+                }
+            },
+             error : function(jqXHR,textStatus,errorThrown){	            
+	            $('#loading-container').hide();
+                $('#error-container').show();
+                $('#error-container').text(  "Graph does not exist." );
+	         	setTimeout(function(){ 
+                	$('#error-container').hide();
+                }, 7000);
+                    
+	        }
+
+        });
+
+	});
 
     $(window).on("beforeunload", function() { 
         doDestroyGraph();

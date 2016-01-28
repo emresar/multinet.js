@@ -36,6 +36,7 @@ from flask import jsonify, render_template
 
 SUPPORTED_LAYOUTS = ['Fruchterman-Reingold','Kamada-Kawai', 'LGL', 'Random', 'Star']
 CACHE_PATH_TEMPLATE = '/tmp/multinet_{}.cpickle'
+CACHE_GRAPH_TEMPLATE = '/tmp/multinet_{}.graph'
 
 
 def generate_id(size=6, chars=string.ascii_lowercase + string.digits):
@@ -53,6 +54,10 @@ def get_hash(path, options):
 
 def get_cache_path(path, options):
     return CACHE_PATH_TEMPLATE.format(get_hash(path, options))
+
+def get_cache_graph_path(path, options):
+    return CACHE_GRAPH_TEMPLATE.format(get_hash(path, options))
+
 
 
 def get_from_cache(path, options):
@@ -230,6 +235,12 @@ def graph_layout(filename, node_data_filename, ly_alg = "Fruchterman-Reingold", 
         ly_start = datetime.now()
         graph = igraph.Graph.Read( tmp_name , directed=directed_graph,format="ncol",weights=False )
 
+        #cache graph here for future use .. 
+        #cache_data( '{}.graph'.format( filename.rsplit('.',1)[0] ), graph, options)
+        
+        with open(get_cache_graph_path(filename, options), 'wb') as f:
+            cPickle.dump(graph, f, protocol=2)
+        
         #new layouting by rcattano
         dimension = 2
         max_it = 500
@@ -372,3 +383,36 @@ def graph_layout(filename, node_data_filename, ly_alg = "Fruchterman-Reingold", 
     except Exception,e:
         print "graph rendering failed", e
         return { "graph_ready": False,  "errors": e, }
+    
+    
+    
+def temporalNetwork(filename, node_data_filename, ly_alg = "Fruchterman-Reingold", directed_graph=True):
+
+    import pyTempNet as tn
+
+    options = {
+        'node_data_filename': node_data_filename,
+        'ly_algorithm': ly_alg,
+        'directed_graph': directed_graph
+    }
+
+    #graphname = '{}.graph'.format( filename.rsplit('.',1)[0] )
+    #cached_graph = get_from_cache(graphname, options)
+    cp = get_cache_graph_path(filename, options)
+    with open(get_cache_graph_path(filename, options), 'rb') as f:
+        cached_graph = cPickle.load(f)
+        
+    
+    if cached_graph:
+        #construct temporal network from cached_graph
+        t = tn.TemporalNetwork()
+        
+        for edge in cached_graph.es:
+            t.addEdge(edge.source,edge.target,edge.index)
+            
+        return { "tempSum":t.Summary() }
+        
+    return { "errors": "Graph not found" }
+    
+    
+    
